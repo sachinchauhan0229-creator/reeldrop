@@ -13,18 +13,8 @@ test('extracts video and mixed carousel without returning video thumbnails',()=>
  assert.deepEqual(extractMedia([{videoUrl:'https://evil.test/file.mp4'}]),[]);
  assert.deepEqual(extractMedia([{type:'Video',displayUrl:video.displayUrl}]),[]);
 });
-function response(){return {headers:{},setHeader(k,v){this.headers[k]=v;},status(code){this.code=code;return this;},json(body){this.body=body;return this;}};}
-test('API rejects bad links and stays closed without setup', async()=>{
- const previous = process.env.DOWNLOADS_ENABLED; delete process.env.DOWNLOADS_ENABLED;
- try {
-  const invalid=response(); await handler({method:'POST',body:{url:'https://evil.test'},headers:{}},invalid);assert.equal(invalid.code,400);
-  const missing=response();await handler({method:'POST',body:{url:'https://instagram.com/p/ABCDE/'},headers:{}},missing);assert.equal(missing.code,503);
- } finally {if(previous!==undefined)process.env.DOWNLOADS_ENABLED=previous;}
-});
-test('API calls the provider with a capped single-post request and normalizes output',async()=>{
- const oldFetch=globalThis.fetch, oldToken=process.env.APIFY_TOKEN, oldEnabled=process.env.DOWNLOADS_ENABLED;
- process.env.APIFY_TOKEN='test-only';process.env.DOWNLOADS_ENABLED='true';
- globalThis.fetch=async (url,options)=>{assert.equal(url.searchParams.get('maxTotalChargeUsd'),'0.01');assert.equal(JSON.parse(options.body).resultsLimit,1);assert.equal(options.headers.Authorization,'Bearer test-only');return {ok:true,json:async()=>[{videoUrl:'https://scontent.cdninstagram.com/video.mp4'}]};};
- try {const res=response();await handler({method:'POST',body:{url:'https://instagram.com/reel/ABCDE/'},headers:{}},res);assert.equal(res.code,200);assert.equal(res.body.media[0].type,'video');}
- finally {globalThis.fetch=oldFetch;for(const [key,value] of [['APIFY_TOKEN',oldToken],['DOWNLOADS_ENABLED',oldEnabled]]) if(value===undefined)delete process.env[key];else process.env[key]=value;}
+function response(){return {headers:{},setHeader(k,v){this.headers[k]=v;},status(code){this.code=code;return this;},json(body){this.body=body;return this;},end(){this.ended=true;}};}
+test('legacy route redirects POST to the API-free extractor',()=>{
+ const res=response();handler({method:'POST'},res);assert.equal(res.code,307);assert.equal(res.headers.Location,'/api/direct');assert.equal(res.ended,true);
+ const get=response();handler({method:'GET'},get);assert.equal(get.code,405);
 });
