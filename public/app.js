@@ -16,7 +16,7 @@ form.addEventListener('submit', async event => {
   }
   submit.disabled = true; status.textContent = 'Finding available media…';
   try {
-    const response = await fetch('/api/download', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url:url.href}), signal:AbortSignal.timeout(55000)});
+    const response = await fetch('/api/direct', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url:url.href}), signal:AbortSignal.timeout(55000)});
     if(!response.headers.get('content-type')?.includes('application/json')) throw new Error('Downloads are not available yet. Please try again after the media service is connected.');
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Unable to fetch this post. Please try again.');
