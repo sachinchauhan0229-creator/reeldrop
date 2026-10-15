@@ -3,6 +3,7 @@ import json
 import re
 import threading
 import time
+import sys
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlsplit
 
@@ -120,3 +121,14 @@ class handler(BaseHTTPRequestHandler):
             return self.send_json(502, {'error': 'Video extraction is temporarily unavailable.'})
         finally:
             _slots.release()
+
+
+if __name__ == '__main__':
+    url = normalize(sys.argv[1] if len(sys.argv) > 1 else None)
+    if not url:
+        print(json.dumps({'error': 'Use a public Instagram video link.'}))
+    else:
+        try:
+            print(json.dumps({'media': extract(url)}))
+        except Exception:
+            print(json.dumps({'error': 'Instagram did not allow this download. Try another public video later.'}))
