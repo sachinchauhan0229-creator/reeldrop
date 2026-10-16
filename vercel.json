@@ -32,6 +32,17 @@
   ],
   "redirects": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "reeldrop-five.vercel.app"
+        }
+      ],
+      "destination": "https://reeldrop-sachin.vercel.app/",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [
         {
@@ -44,4 +55,3 @@
     }
   ]
 }
-
