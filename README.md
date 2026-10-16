@@ -18,3 +18,6 @@ Canonical, sitemap and robots use https://reeldrop-sachin.vercel.app. Search Con
 
 The browser downloads files through /api/save on the same site. The Python endpoint streams the attachment without buffering the entire video; the client validates the expected byte count when provided. Browser settings determine the final save location.
 
+## Search setup
+Primary host: reeldrop-sachin.vercel.app. reeldrop-five.vercel.app permanently redirects to it. Guides, About, Contact and sitemap are published. Search Console access was blocked by the current network filter on 16 October 2026; ownership verification, sitemap submission and indexing requests have NOT been completed. Ask the network administrator for approved access, then verify the URL-prefix property using the HTML tag and submit sitemap.xml. Never claim a guaranteed rank. No ad network or paid plan has been activated; Vercel Hobby is non-commercial.
+
