@@ -6,6 +6,9 @@
     },
     "api/direct.py": {
       "maxDuration": 60
+    },
+    "api/save.py": {
+      "maxDuration": 60
     }
   },
   "headers": [
