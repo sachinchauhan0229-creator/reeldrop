@@ -15,3 +15,6 @@ Live anonymous extraction of a public Reel was successful on Vercel on 15 Octobe
 
 ## SEO and ownership
 Canonical, sitemap and robots use https://reeldrop-sachin.vercel.app. Search Console verification remains pending. No indexing/ranking guarantee. Copyright notice: Sachin Chauhan, with third-party licenses preserved. yt-dlp is used under the Unlicense.
+
+The browser downloads files through /api/save on the same site. The Python endpoint streams the attachment without buffering the entire video; the client validates the expected byte count when provided. Browser settings determine the final save location.
+
