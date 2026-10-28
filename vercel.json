@@ -32,17 +32,6 @@
   ],
   "redirects": [
     {
-      "source": "/",
-      "has": [
-        {
-          "type": "host",
-          "value": "reeldrop-five.vercel.app"
-        }
-      ],
-      "destination": "https://reeldrop-sachin.vercel.app/",
-      "permanent": true
-    },
-    {
       "source": "/:path*",
       "has": [
         {
@@ -50,7 +39,18 @@
           "value": "reeldrop-five.vercel.app"
         }
       ],
-      "destination": "https://reeldrop-sachin.vercel.app/:path*",
+      "destination": "https://reeldrop.jobcraft.in/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "reeldrop-sachin.vercel.app"
+        }
+      ],
+      "destination": "https://reeldrop.jobcraft.in/:path*",
       "permanent": true
     }
   ]
