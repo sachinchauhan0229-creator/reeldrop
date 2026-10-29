@@ -1,0 +1,33 @@
+{
+  "name": "ReelDrop — Instagram media downloader",
+  "short_name": "ReelDrop",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f7fb",
+  "theme_color": "#7654e8",
+  "description": "Save accessible public Instagram photos, videos, Reels and carousels.",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "text": "text",
+      "url": "url"
+    }
+  }
+}

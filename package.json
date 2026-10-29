@@ -1,12 +1,17 @@
 {
   "name": "reeldrop",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "node dev-server.js",
     "start": "node dev-server.js",
-    "check": "node --check public/app.js && node --check api/download.js && node --check dev-server.js",
-    "test": "node --test test/*.test.js"
+    "check": "node --check public/app.js && node --check public/sw.js && node --check api/download.js && node --check dev-server.js",
+    "test": "node --test test/*.test.js",
+    "test:python": "python -m unittest discover -s test -p test_*.py"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "fflate": "^0.8.3"
   }
 }

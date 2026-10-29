@@ -1,28 +1,35 @@
 # ReelDrop
 
-Public Instagram video/Reel downloader. The default endpoint is /api/direct, a Python function using yt-dlp. No paid API and no Apify requests. /api/download only redirects to /api/direct. Photo-only posts are not supported.
+Public Instagram media downloader on https://reeldrop.jobcraft.in. Copyright notice: Sachin Chauhan. Existing domain redirects and disabled AdSense configuration are retained.
 
-## Local development
-Install Python 3.10+ and Node, run `python -m pip install -r requirements.txt`, then `npm run dev`. Set PYTHON if your Python executable has a different name.
+## Features
+- Public photo/video/Reel/legacy IGTV URLs, ordered mixed carousels and source-provided quality variants.
+- Same-page previews and downloads through a strict Instagram CDN proxy; no external media tab.
+- Caption and author display; individual downloads or browser ZIP for selected items (60 MB total ZIP limit).
+- Paste/Clear controls, cancellation, byte progress and basic per-instance request throttling.
+- Story/Highlight and public-profile lookup attempts with explicit access errors when Instagram requires login. No private-account access or passwords.
+- 25 interface-control language choices; help content in English and Hindi. This does not claim fully translated articles in 25 languages.
+- REST API docs at /api.html; stateless MCP tools at /api/mcp documented at /mcp.html.
+- Installable PWA with Android/iOS instructions; no signed APK is distributed.
+- Address-bar query shortcut /?url=INSTAGRAM_LINK, plus a safe Instagram-prefixed URL fallback.
+
+## Local setup
+Python 3.10+ and Node are needed. Run python -m pip install -r requirements.txt, npm ci, then npm run dev. Set PYTHON if your Python executable has another name. Node serves static files and starts a local Python API process on port 3001. Set REELDROP_API_PORT to change it. No paid media API or secret is needed.
+
+## Checks
+npm run check; npm test; npm run test:python. Python unit tests mock network responses; live checks must be reported separately. For a production smoke check, use a public photo, Reel and mixed carousel that you have permission to download. Check MIME type, byte count and ZIP item types.
 
 ## Vercel
-Framework Other; output public; no build command. The root requirements.txt installs yt-dlp for api/direct.py. No API keys required. Existing APIFY_TOKEN and DOWNLOADS_ENABLED variables are unused and can be removed.
+Framework Other, output public, no build command. requirements.txt includes yt-dlp with its curl-cffi optional networking dependency. Do not remove the custom domain, redirects, ads.txt or disabled ads.js. Current code never calls Apify; old APIFY_TOKEN/DOWNLOADS_ENABLED settings are unused. AdSense loading stays disabled until commercial-compatible hosting, approval and consent setup are authorized.
 
-The library is free. Vercel free hosting limits still apply; Instagram may restrict cloud IPs, require login, or change its endpoints. No guarantee of unlimited availability. No Instagram passwords, account cookies or proxy services are used. Returned media links expire. Only save content you own or have permission to save.
+## Limits and honest feature scope
+Instagram can restrict even public content and cloud IPs. Story/Profile availability is conditional and is not guaranteed anonymous access. No account search, follower lists, liker lists, comment scraping, or OAuth account integration is implemented. FastDL's separate paid MCP/API product advertises additional account-data features; those are not represented as working here. No paid plan, proxy subscription, APK-signing account or media-provider key is created. Hosting resource allowances still apply. The API uses bounded 90-second public metadata caching; it does not persist a browsing history or media database.
 
-## Verification
-Live anonymous extraction of a public Reel was successful on Vercel on 15 October 2026 before switching the frontend. Unit tests cover URL/host validation and normalization. Do not represent local or mocked tests as proof every Instagram post works.
+## Research references
+FastDL main tool: https://fastdl.app/en5IW
+FastDL Story/Viewer/API/MCP/Android pages were inspected on 29 October 2026. Source claims such as unlimited downloads, guaranteed anonymity and available quality were not copied as product guarantees. ReelDrop keeps its own branding, text and source code.
+Extractor docs: https://github.com/yt-dlp/yt-dlp
+MCP protocol: https://modelcontextprotocol.io/specification/2025-06-18
 
-## SEO and ownership
-Canonical, sitemap and robots use https://reeldrop.jobcraft.in. Search Console verification remains pending. No indexing/ranking guarantee. Copyright notice: Sachin Chauhan, with third-party licenses preserved. yt-dlp is used under the Unlicense.
-
-The browser downloads files through /api/save on the same site. The Python endpoint streams the attachment without buffering the entire video; the client validates the expected byte count when provided. Browser settings determine the final save location.
-
-## Search setup
-Primary host: reeldrop.jobcraft.in. reeldrop-five.vercel.app permanently redirects to it. Guides, About, Contact and sitemap are published. Search Console access was blocked by the current network filter on 16 October 2026; ownership verification, sitemap submission and indexing requests have NOT been completed. Ask the network administrator for approved access, then verify the URL-prefix property using the HTML tag and submit sitemap.xml. Never claim a guaranteed rank. No ad network or paid plan has been activated; Vercel Hobby is non-commercial.
-
-## Custom domain and ads
-
-GoDaddy CNAME reeldrop points to d1b5ef5b5d538525.vercel-dns-017.com. Vercel connects reeldrop.jobcraft.in to Production and provisions HTTPS. Both former Vercel hosts redirect with path preservation.
-
-AdSense publisher ca-pub-7810129605745071 is declared for ownership and ads.txt is published. Ad loading is deliberately disabled in public/ads.js because this project is on Vercel Hobby (non-commercial use only). Move to commercial-compatible hosting or an authorized paid plan before setting ADS_ENABLED=true. Confirm AdSense approval and any applicable consent setup before enabling ads. This commit does not purchase a plan or claim ad approval. Ads are never inserted in API/media responses; the loader respects DNT/GPC. Search Console indexing and AdSense account approval are separate external steps.
+## SEO
+Canonical and sitemap URLs retain reeldrop.jobcraft.in. Search Console ownership/indexing status is external and is not inferred by this feature update. No ranking or AdSense approval is guaranteed.

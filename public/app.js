@@ -1,60 +1,57 @@
-const form = document.querySelector('#download-form');
-const input = document.querySelector('#url');
-const status = document.querySelector('#status');
-const results = document.querySelector('#results');
-const submit = document.querySelector('#submit');
-async function saveVideo(postUrl, index, button) {
-  button.disabled = true;
-  const previousLabel = button.textContent;
-  button.textContent = 'Downloading…';
-  status.textContent = 'Downloading your video. Keep this page open…';
-  try {
-    const endpoint = '/api/save?' + new URLSearchParams({url:postUrl,index:String(index)});
-    const response = await fetch(endpoint,{signal:AbortSignal.timeout(65000)});
-    if(!response.ok || !response.headers.get('content-type')?.startsWith('video/')) {
-      const error = await response.json().catch(()=>({}));
-      throw new Error(error.error || 'The video could not be downloaded. Please try again.');
-    }
-    const blob = await response.blob();
-    if(!blob.size) throw new Error('The video was empty. Please try again.');
-    const expectedSize = Number(response.headers.get('x-media-size'));
-    if(expectedSize > 0 && blob.size !== expectedSize) throw new Error('The video download was interrupted. Please try again.');
-    const objectUrl = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = objectUrl; anchor.download = `ReelDrop-${new URL(postUrl).pathname.split('/').filter(Boolean).pop()}-${index+1}.mp4`;
-    document.body.append(anchor); anchor.click(); anchor.remove();
-    setTimeout(()=>URL.revokeObjectURL(objectUrl),60000);
-    status.textContent = 'Download started. Check your browser’s Downloads folder.';
-  } catch(error) {
-    status.textContent = error.name === 'TimeoutError' ? 'The download took too long. Please try again.' : error.message;
-  } finally {button.disabled=false;button.textContent=previousLabel;}
-}
-document.querySelector('#paste').addEventListener('click', async () => {
-  try { input.value = await navigator.clipboard.readText(); input.focus(); }
-  catch { status.textContent = 'Use your browser’s Paste option in the link field.'; input.focus(); }
-});
-form.addEventListener('submit', async event => {
-  event.preventDefault(); results.replaceChildren();
-  let url;
-  try { url = new URL(input.value.trim()); } catch { status.textContent = 'Enter a valid Instagram link.'; return; }
-  if (url.protocol !== 'https:' || !['instagram.com','www.instagram.com','m.instagram.com'].includes(url.hostname) || !/^\/(p|reel|reels|tv)\/[^/]+/.test(url.pathname)) {
-    status.textContent = 'Paste a public Instagram post or Reel link.'; return;
-  }
-  submit.disabled = true; status.textContent = 'Finding available media…';
-  try {
-    const response = await fetch('/api/direct', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url:url.href}), signal:AbortSignal.timeout(55000)});
-    if(!response.headers.get('content-type')?.includes('application/json')) throw new Error('Downloads are not available yet. Please try again after the media service is connected.');
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Unable to fetch this post. Please try again.');
-    if(!Array.isArray(data.media)) throw new Error('No downloadable media found.');
-    for (const [index, item] of data.media.entries()) {
-      if(item.type !== 'video') continue;
-      const button = document.createElement('button'); button.type='button'; button.className='media-link download-video'; button.textContent = data.media.length === 1 ? 'Download video ↓' : `Download video ${index+1} ↓`;
-      button.addEventListener('click',()=>saveVideo(url.href,index,button)); results.append(button);
-    }
-    status.textContent = results.children.length ? 'Your video is ready to download.' : 'No downloadable video found.';
-    if(results.children.length === 1) await saveVideo(url.href,0,results.children[0]);
-  } catch(error) { status.textContent = error.name === 'TimeoutError' ? 'This request took too long. Please try again.' : error.message; }
-  finally { submit.disabled = false; }
-});
-
+const form=document.querySelector('#download-form'),input=document.querySelector('#url'),status=document.querySelector('#status'),results=document.querySelector('#results'),submit=document.querySelector('#submit');
+const mode=document.documentElement.dataset.tool||'all';
+const languages={
+en:['English','Instagram downloader','Paste a public Instagram link','Paste','Clear','Find media','Download','Download all selected','Select all','Quality','Working…','Ready to download','Install app'],
+hi:['हिन्दी','Instagram डाउनलोडर','पब्लिक Instagram लिंक पेस्ट करें','पेस्ट','साफ करें','मीडिया खोजें','डाउनलोड','चुना हुआ सब डाउनलोड करें','सभी चुनें','क्वालिटी','खोज रहे हैं…','डाउनलोड के लिए तैयार','ऐप इंस्टॉल करें'],
+bho:['भोजपुरी','Instagram डाउनलोडर','पब्लिक Instagram लिंक पेस्ट करीं','पेस्ट','साफ करीं','मीडिया खोजीं','डाउनलोड','चुनल सब डाउनलोड करीं','सब चुनीं','क्वालिटी','खोजत बानी…','डाउनलोड खातिर तैयार','ऐप इंस्टॉल करीं'],
+ar:['العربية','تنزيل Instagram','ألصق رابط Instagram عامًا','لصق','مسح','البحث عن الوسائط','تنزيل','تنزيل المحدد','تحديد الكل','الجودة','جارٍ البحث…','جاهز للتنزيل','تثبيت التطبيق'],
+cs:['Čeština','Stahování z Instagramu','Vložte veřejný odkaz Instagram','Vložit','Vymazat','Najít média','Stáhnout','Stáhnout vybrané','Vybrat vše','Kvalita','Vyhledávání…','Připraveno ke stažení','Nainstalovat aplikaci'],
+de:['Deutsch','Instagram-Downloader','Öffentlichen Instagram-Link einfügen','Einfügen','Leeren','Medien finden','Herunterladen','Auswahl herunterladen','Alle auswählen','Qualität','Wird gesucht…','Bereit zum Download','App installieren'],
+es:['Español','Descargador de Instagram','Pega un enlace público de Instagram','Pegar','Borrar','Buscar archivos','Descargar','Descargar seleccionados','Seleccionar todo','Calidad','Buscando…','Listo para descargar','Instalar aplicación'],
+fa:['فارسی','دانلودر اینستاگرام','پیوند عمومی اینستاگرام را وارد کنید','چسباندن','پاک کردن','یافتن رسانه','دانلود','دانلود انتخاب‌شده‌ها','انتخاب همه','کیفیت','در حال جستجو…','آماده دانلود','نصب برنامه'],
+fr:['Français','Téléchargeur Instagram','Collez un lien Instagram public','Coller','Effacer','Trouver les médias','Télécharger','Télécharger la sélection','Tout sélectionner','Qualité','Recherche…','Prêt à télécharger','Installer'],
+it:['Italiano','Downloader Instagram','Incolla un link Instagram pubblico','Incolla','Cancella','Trova contenuti','Scarica','Scarica selezionati','Seleziona tutto','Qualità','Ricerca…','Pronto per scaricare','Installa app'],
+ja:['日本語','Instagramダウンローダー','公開Instagramリンクを貼り付け','貼り付け','クリア','メディアを検索','ダウンロード','選択した項目を保存','すべて選択','画質','検索中…','ダウンロードの準備完了','アプリをインストール'],
+ko:['한국어','Instagram 다운로더','공개 Instagram 링크 붙여넣기','붙여넣기','지우기','미디어 찾기','다운로드','선택 항목 다운로드','모두 선택','화질','검색 중…','다운로드 준비 완료','앱 설치'],
+nl:['Nederlands','Instagram-downloader','Plak een openbare Instagram-link','Plakken','Wissen','Media zoeken','Downloaden','Selectie downloaden','Alles selecteren','Kwaliteit','Zoeken…','Klaar om te downloaden','App installeren'],
+pl:['Polski','Pobieranie z Instagrama','Wklej publiczny link z Instagrama','Wklej','Wyczyść','Znajdź multimedia','Pobierz','Pobierz wybrane','Zaznacz wszystko','Jakość','Wyszukiwanie…','Gotowe do pobrania','Zainstaluj aplikację'],
+pt:['Português','Downloader do Instagram','Cole um link público do Instagram','Colar','Limpar','Encontrar mídia','Baixar','Baixar selecionados','Selecionar tudo','Qualidade','Buscando…','Pronto para baixar','Instalar app'],
+ro:['Română','Descărcare Instagram','Lipește un link public Instagram','Lipește','Șterge','Găsește fișiere','Descarcă','Descarcă selecția','Selectează tot','Calitate','Se caută…','Gata de descărcare','Instalează aplicația'],
+ru:['Русский','Загрузчик Instagram','Вставьте ссылку на открытый пост','Вставить','Очистить','Найти медиа','Скачать','Скачать выбранное','Выбрать всё','Качество','Поиск…','Готово к скачиванию','Установить'],
+sk:['Slovenčina','Sťahovanie z Instagramu','Vložte verejný odkaz Instagram','Vložiť','Vymazať','Nájsť médiá','Stiahnuť','Stiahnuť vybrané','Vybrať všetko','Kvalita','Vyhľadávanie…','Pripravené na stiahnutie','Nainštalovať'],
+sv:['Svenska','Instagram-nedladdare','Klistra in en offentlig Instagram-länk','Klistra in','Rensa','Hitta medier','Ladda ner','Ladda ner valda','Välj alla','Kvalitet','Söker…','Redo att ladda ner','Installera app'],
+tr:['Türkçe','Instagram indirici','Herkese açık Instagram bağlantısı yapıştırın','Yapıştır','Temizle','Medyayı bul','İndir','Seçilenleri indir','Tümünü seç','Kalite','Aranıyor…','İndirmeye hazır','Uygulamayı yükle'],
+vi:['Tiếng Việt','Trình tải Instagram','Dán liên kết Instagram công khai','Dán','Xóa','Tìm nội dung','Tải xuống','Tải mục đã chọn','Chọn tất cả','Chất lượng','Đang tìm…','Sẵn sàng tải xuống','Cài ứng dụng'],
+zh:['中文','Instagram下载器','粘贴公开的Instagram链接','粘贴','清除','查找媒体','下载','下载所选项目','全选','画质','正在查找…','可以下载了','安装应用'],
+id:['Bahasa Indonesia','Pengunduh Instagram','Tempel tautan Instagram publik','Tempel','Hapus','Cari media','Unduh','Unduh yang dipilih','Pilih semua','Kualitas','Mencari…','Siap diunduh','Pasang aplikasi'],
+ms:['Bahasa Melayu','Pemuat turun Instagram','Tampal pautan Instagram awam','Tampal','Kosongkan','Cari media','Muat turun','Muat turun pilihan','Pilih semua','Kualiti','Mencari…','Sedia dimuat turun','Pasang aplikasi'],
+th:['ไทย','เครื่องมือดาวน์โหลด Instagram','วางลิงก์ Instagram สาธารณะ','วาง','ล้าง','ค้นหาสื่อ','ดาวน์โหลด','ดาวน์โหลดที่เลือก','เลือกทั้งหมด','คุณภาพ','กำลังค้นหา…','พร้อมดาวน์โหลด','ติดตั้งแอป']};
+let language='en';try{const saved=localStorage.getItem('reeldrop-language');if(languages[saved])language=saved;}catch{}
+const t=()=>languages[language];
+const languageSelect=document.querySelector('#language');
+for(const [code,labels]of Object.entries(languages)){const option=new Option(labels[0],code);languageSelect.add(option);}languageSelect.value=language;
+function translate(){document.documentElement.lang='en';form.lang=language;document.querySelector('.download-box').dir=['ar','fa'].includes(language)?'rtl':'ltr';input.placeholder=['story','viewer'].includes(mode)?'Instagram URL or @username':t()[2];document.querySelector('#paste').textContent=t()[3];document.querySelector('#clear').textContent=t()[4];submit.textContent=t()[5]+' ↓';document.querySelectorAll('[data-install]').forEach(b=>b.textContent=t()[12]);document.querySelector('#interface-note').textContent=language==='en'?'Public content only · No passwords · No added watermark':t()[1]+' · Public content only';}
+languageSelect.addEventListener('change',()=>{language=languageSelect.value;try{localStorage.setItem('reeldrop-language',language);}catch{}translate();});translate();
+let generation=0,payload=null,cards=[],controllers=new Set();
+const progress=document.querySelector('#download-progress');
+function message(text,error=false){status.textContent=text;status.classList.toggle('error',error);}
+function asset(source){return '/api/save?'+new URLSearchParams({source,preview:'1'});}
+function filename(item,mime=''){const ext=mime.includes('jpeg')?'jpg':mime.includes('png')?'png':mime.includes('webp')?'webp':mime.includes('avif')?'avif':mime.includes('gif')?'gif':mime.includes('webm')?'webm':item.type==='image'?'jpg':'mp4';return 'ReelDrop-'+String(item.id||'media').replace(/[^A-Za-z0-9_-]/g,'').slice(0,60)+'.'+ext;}
+function choose(item,select){return item.variants?.[Number(select?.value||0)]||item;}
+function saveBlob(blob,name){const objectUrl=URL.createObjectURL(blob),a=document.createElement('a');a.href=objectUrl;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(objectUrl),60000);}
+async function getBlob(item,select,onProgress){const selected=choose(item,select),controller=new AbortController();controllers.add(controller);const timeout=setTimeout(()=>controller.abort(),65000);try{const response=await fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source:selected.url,filename:String(item.id||'media')}),signal:controller.signal});if(!response.ok){const error=await response.json().catch(()=>({}));throw Error(error.error||'Download failed. Please try again.');}const mime=response.headers.get('content-type')||'';if(!/^(image|video)\//.test(mime))throw Error('The server did not return a photo or video.');const expected=Number(response.headers.get('x-media-size')),reader=response.body.getReader(),chunks=[];let size=0;while(true){const {done,value}=await reader.read();if(done)break;chunks.push(value);size+=value.length;if(size>160*1024*1024){await reader.cancel();throw Error('This file is too large for an in-browser download. Try a lower available quality.');}onProgress?.(size,expected);}if(!size||expected>0&&size!==expected)throw Error('The transfer was interrupted. Please retry.');return {blob:new Blob(chunks,{type:mime}),name:filename(item,mime)};}finally{clearTimeout(timeout);controllers.delete(controller);}}
+async function downloadOne(item,select,button){const current=generation;button.disabled=true;progress.hidden=false;progress.removeAttribute('value');message('Downloading… Keep this page open.');try{const file=await getBlob(item,select,(size,total)=>{if(current!==generation)return;if(total){progress.max=total;progress.value=size;}message('Downloading… '+(size/1048576).toFixed(1)+' MB'+(total?' / '+(total/1048576).toFixed(1)+' MB':''));});if(current!==generation)return;saveBlob(file.blob,file.name);message('Download started. Check your browser’s Downloads folder.');}catch(error){if(current===generation)message(error.name==='AbortError'?'Download cancelled or timed out. Please retry.':error.message,true);}finally{button.disabled=false;if(current===generation)progress.hidden=true;}}
+function reset(){generation++;for(const controller of controllers)controller.abort();controllers.clear();input.value='';results.replaceChildren();payload=null;cards=[];submit.disabled=false;progress.hidden=true;message('');input.focus();}
+document.querySelector('#clear').addEventListener('click',reset);
+document.querySelector('#paste').addEventListener('click',async()=>{try{input.value=await navigator.clipboard.readText();input.focus();}catch{message('Paste the link manually in the field above.');input.focus();}});
+input.addEventListener('keydown',event=>{if(event.key==='Escape')reset();});
+async function downloadAll(button){const selected=cards.filter(c=>c.check.checked);if(!selected.length){message('Select at least one photo or video.',true);return;}if(selected.length===1)return downloadOne(selected[0].item,selected[0].select,button);const current=generation;button.disabled=true;progress.hidden=false;progress.max=selected.length;progress.value=0;let total=0;try{if(!window.fflate)throw Error('Album download could not load. Please download each item individually.');const files={};for(let index=0;index<selected.length;index++){message('Preparing album '+(index+1)+' / '+selected.length+'…');const file=await getBlob(selected[index].item,selected[index].select);if(current!==generation)return;total+=file.blob.size;if(total>60*1048576)throw Error('This album exceeds the 60 MB browser ZIP limit. Download its items individually.');files[(index+1)+'-'+file.name]=new Uint8Array(await file.blob.arrayBuffer());progress.value=index+1;}const zipped=window.fflate.zipSync(files,{level:0});saveBlob(new Blob([zipped],{type:'application/zip'}),'ReelDrop-album.zip');message('Album download started. Check your Downloads folder.');}catch(error){if(current===generation)message(error.message,true);}finally{button.disabled=false;if(current===generation)progress.hidden=true;}}
+function renderProfile(profile){const section=document.createElement('section');section.className='profile-result';if(profile.avatar){const image=new Image();image.src=asset(profile.avatar);image.alt='Public profile picture';image.width=88;image.height=88;section.append(image);const download=document.createElement('button');download.type='button';download.className='media-link';download.textContent='Download profile picture ↓';const item={id:profile.username+'-avatar',type:'image',url:profile.avatar};download.onclick=()=>downloadOne(item,null,download);section.append(download);}const name=document.createElement('h2');name.textContent=profile.fullName||profile.username;const handle=document.createElement('p');handle.textContent='@'+profile.username;const bio=document.createElement('p');bio.textContent=profile.biography;const counts=document.createElement('p');counts.textContent=Number(profile.posts).toLocaleString()+' posts · '+Number(profile.followers).toLocaleString()+' followers · '+Number(profile.following).toLocaleString()+' following';section.append(name,handle,bio,counts);results.append(section);}
+function render(data){results.replaceChildren();cards=[];if(data.profile)renderProfile(data.profile);if(data.post?.author||data.post?.caption){const details=document.createElement('details');details.className='post-caption';const summary=document.createElement('summary');summary.textContent=data.post.author?'@'+data.post.author+' · Caption':'Post caption';const text=document.createElement('p');text.textContent=data.post.caption;details.append(summary,text);results.append(details);}const allItems=data.media||[];const visible=allItems.filter(item=>mode==='photo'?item.type==='image':['video','reels','igtv'].includes(mode)?item.type==='video':true);if(!visible.length&&!data.profile){message(mode==='photo'?'No photos found in this post.':'No matching media found in this post.',true);return;}
+ if(visible.length){const toolbar=document.createElement('div');toolbar.className='result-toolbar';const label=document.createElement('label'),all=document.createElement('input');all.type='checkbox';all.checked=true;label.append(all,document.createTextNode(t()[8]));const count=document.createElement('span');count.textContent=visible.length+' item'+(visible.length>1?'s':'');const download=document.createElement('button');download.type='button';download.className='primary compact';download.textContent=t()[7]+' ↓';download.onclick=()=>downloadAll(download);all.onchange=()=>cards.forEach(c=>c.check.checked=all.checked);toolbar.append(label,count,download);results.append(toolbar);const grid=document.createElement('div');grid.className='media-grid';results.append(grid);
+  visible.forEach((item,index)=>{const card=document.createElement('article');card.className='media-card';const checkLabel=document.createElement('label');checkLabel.className='media-check';const check=document.createElement('input');check.type='checkbox';check.checked=true;check.setAttribute('aria-label','Select item '+(index+1));checkLabel.append(check,document.createTextNode((item.type==='image'?'Photo':'Video')+' '+(index+1)));const preview=document.createElement('div');preview.className='media-preview';if(item.type==='image'){const img=new Image();img.src=asset(item.url);img.alt='Photo '+(index+1);img.loading='lazy';img.onerror=()=>{img.remove();preview.textContent='Preview unavailable. You can still try the download.';};preview.append(img);}else{const video=document.createElement('video');video.controls=true;video.playsInline=true;video.preload='none';if(item.thumbnail)video.poster=asset(item.thumbnail);video.src=asset(item.url);video.setAttribute('aria-label','Preview video '+(index+1));preview.append(video);}const choices=item.variants?.length?item.variants:[item],label=document.createElement('label');label.className='quality-label';label.textContent=t()[9]+' ';const select=document.createElement('select');select.setAttribute('aria-label','Quality for item '+(index+1));choices.forEach((choice,i)=>select.add(new Option(choice.label||'Original',String(i))));label.append(select);select.onchange=()=>{if(item.type==='video')preview.querySelector('video').src=asset(choose(item,select).url);else if(preview.querySelector('img'))preview.querySelector('img').src=asset(choose(item,select).url);};const button=document.createElement('button');button.type='button';button.className='media-link download-video';button.textContent=t()[6]+' '+(item.type==='image'?'photo':'video')+' ↓';button.onclick=()=>downloadOne(item,select,button);card.append(checkLabel,preview,label,button);grid.append(card);cards.push({item,check,select,button});});
+ }for(const warning of data.warnings||[]){const p=document.createElement('p');p.className='result-note';p.textContent=warning;results.append(p);}if(visible.length)message(t()[11]+' · '+visible.length+' item'+(visible.length>1?'s':''));else if(data.profile)message('Public profile loaded. Paste a specific post link to download its media.');}
+form.addEventListener('submit',async event=>{event.preventDefault();const current=++generation;for(const c of controllers)c.abort();controllers.clear();results.replaceChildren();cards=[];submit.disabled=true;message(t()[10]);const controller=new AbortController();controllers.add(controller);const timeout=setTimeout(()=>controller.abort(),55000);try{const response=await fetch('/api/direct',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:input.value.trim(),mode}),signal:controller.signal});const data=await response.json().catch(()=>({error:'The service could not answer. Please retry.'}));if(current!==generation)return;if(!response.ok)throw Error(data.error||'This media could not be retrieved.');payload=data;render(data);if(cards.length===1&&mode!=='viewer')await downloadOne(cards[0].item,cards[0].select,cards[0].button);}catch(error){if(current===generation)message(error.name==='AbortError'?'The request was cancelled or took too long. Try again.':error.message,true);}finally{clearTimeout(timeout);controllers.delete(controller);if(current===generation)submit.disabled=false;}});
+let installPrompt=null;window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;document.querySelectorAll('[data-install]').forEach(b=>b.hidden=false);});document.querySelectorAll('[data-install]').forEach(button=>button.onclick=async()=>{if(installPrompt){await installPrompt.prompt();installPrompt=null;}else location.href='/install.html';});
+if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
+const params=new URLSearchParams(location.search);let shared=params.get('url')||params.get('text');if(shared){const match=shared.match(/https?:\/\/(?:www\.)?instagram\.com\/[^\s]+/);input.value=match?match[0]:shared;}

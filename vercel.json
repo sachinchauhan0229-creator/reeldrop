@@ -9,6 +9,9 @@
     },
     "api/save.py": {
       "maxDuration": 60
+    },
+    "api/mcp.py": {
+      "maxDuration": 60
     }
   },
   "headers": [
