@@ -229,11 +229,13 @@ def extract_payload(value, mode='all'):
         user = product.get('user') or {}
         payload = {'sourceUrl': normalize(value, mode), 'kind': 'story' if is_story else 'carousel' if len(media) > 1 else media[0]['type'],
                    'post': {'caption': (product.get('caption') or {}).get('text', '')[:5000],
-                            'author': user.get('username', ''), 'authorName': user.get('full_name', '')},
+                            'author': user.get('username', ''), 'authorName': user.get('full_name', ''),
+                            'timestamp': product.get('taken_at') if isinstance(product.get('taken_at'), (int, float)) else None,
+                            'likes': product.get('like_count') if isinstance(product.get('like_count'), int) and product['like_count'] >= 0 else None,
+                            'comments': product.get('comment_count') if isinstance(product.get('comment_count'), int) and product['comment_count'] >= 0 else None},
                    'media': media, 'warnings': []}
     with _cache_lock:
         if len(_cache) >= 32:
             _cache.pop(next(iter(_cache)))
         _cache[key] = (time.monotonic() + 90, copy.deepcopy(payload))
     return payload
-
