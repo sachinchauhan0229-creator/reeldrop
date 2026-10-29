@@ -117,6 +117,8 @@ def variants(candidates, kind):
         if key not in seen:
             seen.add(key)
             item['id'] = str(len(result))
+            if not item['width'] or not item['height']:
+                item['label'] = f'Source {len(result) + 1} (size not provided)'
             result.append(item)
     return result[:10]
 
@@ -234,3 +236,4 @@ def extract_payload(value, mode='all'):
             _cache.pop(next(iter(_cache)))
         _cache[key] = (time.monotonic() + 90, copy.deepcopy(payload))
     return payload
+

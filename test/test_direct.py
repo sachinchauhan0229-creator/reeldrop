@@ -26,6 +26,9 @@ class DirectTests(unittest.TestCase):
         self.assertEqual(items[1]['thumbnail'],'https://a.cdninstagram.com/cover.jpg')
     def test_video_without_safe_video_url_is_not_replaced_by_its_cover(self):
         self.assertEqual(media.product_media({**VIDEO,'video_versions':[{'url':'https://evil.test/video.mp4'}]}),[])
+    def test_sources_without_dimensions_have_distinct_honest_labels(self):
+        choices=media.variants([{'url':'https://a.cdninstagram.com/a.jpg'},{'url':'https://a.cdninstagram.com/b.jpg'}],'image')
+        self.assertEqual([item['label'] for item in choices],['Source 1 (size not provided)','Source 2 (size not provided)'])
     def test_capture_supports_photo_only_post_and_cache(self):
         class FakeExtractor:
             def extract(self,url):self.products.append({**PHOTO,'user':{'username':'creator'},'caption':{'text':'An original caption'}});return {}
@@ -45,3 +48,4 @@ class DirectTests(unittest.TestCase):
     def test_rest_endpoint_rejects_non_object_json(self):
         obj=direct.handler.__new__(direct.handler);obj.headers={'Content-Length':'2'};obj.rfile=BytesIO(b'[]');obj.wfile=BytesIO();obj.send_response=lambda code:setattr(obj,'status',code);obj.send_header=lambda *args:None;obj.end_headers=lambda:None
         obj.do_POST();self.assertEqual(obj.status,400)
+
