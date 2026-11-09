@@ -9,6 +9,7 @@ from pathlib import Path
 
 from reeldrop_media import MediaError, throttle
 from reeldrop_youtube import lookup, make_mp4, youtube_url
+from reeldrop_youtube_worker import worker_media_size, worker_request
 
 slots = threading.BoundedSemaphore(1)
 
@@ -22,6 +23,9 @@ class handler(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps(payload).encode())
 
     def do_POST(self):
+        return self.handle_youtube(use_worker=True)
+
+    def handle_youtube(self, use_worker):
         acquired = started = False
         try:
             if self.headers.get('Sec-Fetch-Site') == 'cross-site':
@@ -38,13 +42,32 @@ class handler(BaseHTTPRequestHandler):
             quality = data.get('quality')
             if quality is not None and (type(quality) is not int or not 1 <= quality <= 1080):
                 raise ValueError('Invalid resolution')
-            throttle(self.headers.get('x-forwarded-for', 'unknown').split(',')[0] + ':youtube', 8)
+            client = self.headers.get('x-forwarded-for', 'unknown').split(',')[0]
+            throttle(client + ':youtube', 8)
+            video_id = url[-11:]
+            upstream = worker_request(url, quality, client) if use_worker else None
+            if upstream is not None:
+                with upstream:
+                    if quality is None:
+                        if upstream.headers.get_content_type() != 'application/json':
+                            raise MediaError('The shared downloader returned an invalid result.', 'WORKER_INVALID_RESULT', 502)
+                        return self.youtube_json(200, json.loads(upstream.read(32768)))
+                    remaining = worker_media_size(upstream)
+                    self.youtube_video_headers(video_id, quality, remaining)
+                    started = True
+                    while remaining:
+                        chunk = upstream.read(min(65536, remaining))
+                        if not chunk:
+                            break
+                        self.wfile.write(chunk)
+                        self.wfile.flush()
+                        remaining -= len(chunk)
+                return
             acquired = slots.acquire(blocking=False)
             if not acquired:
                 raise MediaError('YouTube downloads are busy. Try again shortly.', 'BUSY', 429)
             deadline = time.monotonic() + 48
             info, formats = lookup(url)
-            video_id = url[-11:]
             title = str(info.get('title') or 'YouTube video')[:200]
             if quality is None:
                 choices = [{'height': height, 'label': f'{height}p' + (' Full HD' if height == 1080 else '')}
@@ -55,14 +78,7 @@ class handler(BaseHTTPRequestHandler):
                 raise MediaError('This resolution is no longer available. Find the video again.', 'YOUTUBE_NO_FORMAT', 422)
             with tempfile.TemporaryDirectory(prefix='reeldrop-yt-') as tmp:
                 target = make_mp4(formats[quality], Path(tmp), deadline)
-                filename = re.sub(r'[^A-Za-z0-9_-]', '', video_id)
-                self.send_response(200)
-                self.send_header('Content-Type', 'video/mp4')
-                self.send_header('Content-Disposition', f'attachment; filename="ReelDrop-{filename}-{quality}p.mp4"')
-                self.send_header('X-Media-Size', str(target.stat().st_size))
-                self.send_header('Cache-Control', 'no-store')
-                self.send_header('X-Content-Type-Options', 'nosniff')
-                self.end_headers()
+                self.youtube_video_headers(video_id, quality, target.stat().st_size)
                 started = True
                 with target.open('rb') as source:
                     while chunk := source.read(65536):
@@ -83,3 +99,13 @@ class handler(BaseHTTPRequestHandler):
         finally:
             if acquired:
                 slots.release()
+
+    def youtube_video_headers(self, video_id, quality, size):
+        filename = re.sub(r'[^A-Za-z0-9_-]', '', video_id)
+        self.send_response(200)
+        self.send_header('Content-Type', 'video/mp4')
+        self.send_header('Content-Disposition', f'attachment; filename="ReelDrop-{filename}-{quality}p.mp4"')
+        self.send_header('X-Media-Size', str(size))
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('X-Content-Type-Options', 'nosniff')
+        self.end_headers()
