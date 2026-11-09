@@ -14,7 +14,10 @@
       "maxDuration": 60
     },
     "api/youtube.py": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "regions": [
+        "bom1"
+      ]
     }
   },
   "headers": [
