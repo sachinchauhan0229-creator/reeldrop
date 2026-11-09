@@ -9,6 +9,7 @@ from pathlib import Path
 
 from reeldrop_media import MediaError, throttle
 from reeldrop_youtube import lookup, make_mp4, youtube_url
+from reeldrop_youtube_alerts import notify_youtube_signin_required
 from reeldrop_youtube_worker import worker_media_size, worker_request
 
 slots = threading.BoundedSemaphore(1)
@@ -86,6 +87,8 @@ class handler(BaseHTTPRequestHandler):
                         self.wfile.flush()
         except MediaError as error:
             if not started:
+                if use_worker and error.code == 'YOUTUBE_SIGNIN_REQUIRED':
+                    notify_youtube_signin_required()
                 self.youtube_json(error.status, {'error': str(error), 'code': error.code})
         except (ValueError, UnicodeError):
             if not started:
