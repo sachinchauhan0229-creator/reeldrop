@@ -10,6 +10,7 @@ from pathlib import Path
 from reeldrop_media import MediaError, throttle
 from reeldrop_youtube import lookup, make_mp4, youtube_url
 from reeldrop_youtube_alerts import notify_youtube_signin_required
+from reeldrop_youtube_session import read_youtube_session
 from reeldrop_youtube_worker import worker_media_size, worker_request
 
 slots = threading.BoundedSemaphore(1)
@@ -68,7 +69,15 @@ class handler(BaseHTTPRequestHandler):
             if not acquired:
                 raise MediaError('YouTube downloads are busy. Try again shortly.', 'BUSY', 429)
             deadline = time.monotonic() + 48
-            info, formats = lookup(url)
+            try:
+                session = read_youtube_session() if use_worker else None
+            except ValueError as error:
+                raise MediaError('The server needs a fresh YouTube session.',
+                                 'YOUTUBE_SIGNIN_REQUIRED', 422) from error
+            except RuntimeError as error:
+                raise MediaError('The server could not load its YouTube session. Try again later.',
+                                 'YOUTUBE_SESSION_UNAVAILABLE', 503) from error
+            info, formats = lookup(url, session=session)
             title = str(info.get('title') or 'YouTube video')[:200]
             if quality is None:
                 choices = [{'height': height, 'label': f'{height}p' + (' Full HD' if height == 1080 else '')}

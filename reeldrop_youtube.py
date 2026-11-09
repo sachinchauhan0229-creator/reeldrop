@@ -1,5 +1,6 @@
 """Resolve and combine public YouTube MP4 streams without exposing CDN URLs."""
 import importlib.util
+from io import StringIO
 import re
 import shutil
 import subprocess
@@ -110,11 +111,13 @@ def node_runtime():
     return shutil.which('node')
 
 
-def lookup(url):
+def lookup(url, session=None):
     runtime = node_runtime()
     options = {'quiet': True, 'logger': QuietLogger(), 'noplaylist': True, 'cachedir': False,
                'socket_timeout': 7, 'retries': 0, 'extractor_retries': 0,
                'js_runtimes': {'node': {'path': runtime}} if runtime else {}}
+    if session:
+        options['cookiefile'] = StringIO(session)
     try:
         with yt_dlp.YoutubeDL(options) as downloader:
             info = downloader.extract_info(url, download=False)
