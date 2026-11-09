@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en" data-tool="youtube">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>YouTube Video Downloader up to 1080p — ReelDrop</title>
+  <meta name="description" content="Find available YouTube video and Shorts resolutions, up to 1080p Full HD, and save an MP4 with audio.">
+  <link rel="canonical" href="https://reeldrop.jobcraft.in/youtube-downloader.html">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/analytics.js" defer></script>
+  <script src="/app.js?v=youtube-1" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to content</a>
+  <header>
+    <a class="brand" href="/"><img class="brand-icon" src="/logo.svg" alt="" width="38" height="38">ReelDrop<span class="dot">.</span></a>
+    <nav aria-label="Main navigation">
+      <a href="/">Instagram</a>
+      <label class="language-label"><span class="sr-only">Interface language</span><select id="language" aria-label="Interface language"></select></label>
+    </nav>
+  </header>
+  <main id="content">
+    <section class="hero">
+      <div class="eyebrow"><span></span> YOUTUBE &amp; SHORTS</div>
+      <h1>YouTube downloader.<br><em>Up to Full HD.</em></h1>
+      <p class="intro">Choose an available resolution and save an MP4 with audio.</p>
+      <div class="download-box">
+        <nav class="tool-tabs" aria-label="Download tools"><a href="/">Instagram</a><a href="/youtube-downloader.html" class="active" aria-current="page">YouTube</a></nav>
+        <form id="download-form">
+          <label class="sr-only" for="url">YouTube video link</label>
+          <div class="input-row">
+            <input id="url" name="url" type="text" inputmode="url" placeholder="Paste a YouTube video link" autocomplete="off" required>
+            <button type="button" id="paste" class="paste">Paste</button>
+            <button type="button" id="clear" class="paste clear">Clear</button>
+          </div>
+          <button class="primary" id="submit" type="submit">Find media ↓</button>
+        </form>
+        <p id="interface-note" class="hint">Public videos · MP4 with audio · Up to 120 MB</p>
+        <p id="status" role="status" aria-live="polite"></p>
+        <progress id="download-progress" hidden aria-label="Download progress"></progress>
+      </div>
+    </section>
+    <section class="results-section" aria-label="Video results"><div id="results"></div></section>
+    <section class="legal">
+      <h2>Available quality</h2>
+      <p>1080p is offered when YouTube makes it available within the 120 MB limit. If 1080p is unavailable, choose a lower resolution from the results. Longer videos may exceed the download limit.</p>
+      <p>Save only videos you own or have permission to download.</p>
+    </section>
+  </main>
+  <footer><a href="/">ReelDrop</a><nav aria-label="Site information"><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a><a href="/contact.html">Contact</a></nav></footer>
+</body>
+</html>

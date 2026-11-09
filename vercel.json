@@ -12,6 +12,9 @@
     },
     "api/mcp.py": {
       "maxDuration": 60
+    },
+    "api/youtube.py": {
+      "maxDuration": 60
     }
   },
   "headers": [

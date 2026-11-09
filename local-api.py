@@ -1,9 +1,9 @@
 """Development-only HTTP adapter for the same Python handlers deployed on Vercel."""
 import os
 from http.server import ThreadingHTTPServer
-from api import direct, save, mcp
+from api import direct, save, mcp, youtube
 
-class Router(save.handler,direct.handler,mcp.handler):
+class Router(save.handler,direct.handler,mcp.handler,youtube.handler):
     def do_GET(self):
         path=self.path.split('?',1)[0]
         if path=='/api/save':return save.handler.do_GET(self)
@@ -13,6 +13,7 @@ class Router(save.handler,direct.handler,mcp.handler):
         path=self.path.split('?',1)[0]
         if path=='/api/save':return save.handler.do_POST(self)
         if path=='/api/mcp':return mcp.handler.do_POST(self)
+        if path=='/api/youtube':return youtube.handler.do_POST(self)
         if path in ('/api/direct','/api/download'):return direct.handler.do_POST(self)
         return self.send_json(404,{'error':'Not found'})
     def log_message(self,*_args):pass
