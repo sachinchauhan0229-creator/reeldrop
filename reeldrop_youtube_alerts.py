@@ -47,6 +47,7 @@ def notify_youtube_signin_required():
             with connection.getresponse() as response:
                 if 200 <= response.status < 300:
                     last_sent_day = day
+                    print('Resend accepted the YouTube reconnect alert', flush=True)
                 else:
                     logging.warning('YouTube reconnect alert rejected by Resend (%d)', response.status)
         finally:

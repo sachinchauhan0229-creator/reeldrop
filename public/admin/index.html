@@ -3,6 +3,8 @@
   <h2 id="youtube-reconnect-title">YouTube reconnect</h2>
   <p>ReelDrop can email the admin when YouTube asks its downloader to sign in. If you received an alert, open YouTube to review your account sign-in.</p>
   <p><a href="https://www.youtube.com/signin" target="_blank" rel="noopener noreferrer">Open YouTube sign-in</a></p>
+  <p><a href="https://vercel.com/sachinchauhan0229-6958/reeldrop/settings/environment-variables" target="_blank" rel="noopener noreferrer">Manage Resend key in Vercel</a></p>
+  <p>Update the Production secret named <code>RESEND_API_KEY</code>, then redeploy ReelDrop to apply the new key.</p>
   <p>Signing in opens a session in this browser. If ReelDrop uses a signed-in download worker, renew the session on that worker, then retry the download.</p>
 </section>
 <div class="title-row"><div><p class="eyebrow">REELDROP ANALYTICS</p><h1>ReelDrop analytics</h1></div><div class="controls"><label for="period">Report period</label><select id="period"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option></select><button id="refresh">Refresh ↻</button></div></div><p id="status" role="status">Loading your report…</p><div class="stats"><article><span>Total unique browsers</span><strong id="visitors">—</strong><small>All time</small></article><article><span>Total visits</span><strong id="sessions">—</strong><small>30-minute browsing sessions</small></article><article><span>Total page views</span><strong id="views">—</strong><small>All time</small></article><article><span>Today's unique browsers</span><strong id="today_visitors">—</strong><small><span id="today_views">—</span> page views · IST</small></article></div><section class="panel" id="activity">
