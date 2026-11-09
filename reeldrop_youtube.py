@@ -116,11 +116,20 @@ def lookup(url):
                'socket_timeout': 7, 'retries': 0, 'extractor_retries': 0,
                'js_runtimes': {'node': {'path': runtime}} if runtime else {}}
     try:
-        with yt_dlp.YoutubeDL(options) as downloader:
-            info = downloader.extract_info(url, download=False)
+        try:
+            with yt_dlp.YoutubeDL(options) as downloader:
+                info = downloader.extract_info(url, download=False)
+        except yt_dlp.utils.DownloadError as error:
+            if 'sign in to confirm' not in str(error).lower():
+                raise
+            options['extractor_args'] = {
+                'youtube': {'player_client': ['web_safari', 'mweb', 'android_vr']}
+            }
+            with yt_dlp.YoutubeDL(options) as downloader:
+                info = downloader.extract_info(url, download=False)
     except yt_dlp.utils.DownloadError as error:
         if 'sign in to confirm' in str(error).lower():
-            raise MediaError('YouTube requires this server to sign in before it can access the video.',
+            raise MediaError('YouTube denied guest access from the ReelDrop server.',
                              'YOUTUBE_SIGNIN_REQUIRED', 422) from error
         raise MediaError('YouTube did not make this video available to ReelDrop. Try an accessible public video.',
                          'YOUTUBE_UNAVAILABLE', 422) from error
