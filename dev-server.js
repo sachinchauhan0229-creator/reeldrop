@@ -5,6 +5,8 @@ import path from 'node:path';
 import {spawn} from 'node:child_process';
 const root=path.resolve(fileURLToPath(new URL('./public/',import.meta.url)));
 const apiPort=Number(process.env.REELDROP_API_PORT || 3001);
+const liveOrigin='https://reeldrop.jobcraft.in';
+const liveBridge=process.env.REELDROP_LIVE_BRIDGE==='1';
 const python=spawn(process.env.PYTHON || 'python',[fileURLToPath(new URL('./local-api.py',import.meta.url))],{windowsHide:true,stdio:['ignore','ignore','pipe'],env:{...process.env,REELDROP_API_PORT:String(apiPort)}});
 python.stderr.on('data',data=>process.stderr.write(data));
 python.on('error',()=>process.stderr.write('Python API could not start. Install requirements.txt and set PYTHON if needed.\n'));
@@ -13,6 +15,20 @@ const mime={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8',
 http.createServer(async(req,res)=>{
  try{
   const url=new URL(req.url,'http://localhost');
+  if(url.pathname==='/reeldrop-local/youtube'){
+   if(!liveBridge||req.headers.origin!==liveOrigin||req.headers.host!==`127.0.0.1:${process.env.PORT||3000}`){res.writeHead(403);res.end();return;}
+   const cors={'Access-Control-Allow-Origin':liveOrigin,'Access-Control-Expose-Headers':'X-Media-Size','Cache-Control':'no-store','Vary':'Origin'};
+   if(req.method==='OPTIONS'){
+    res.writeHead(204,{...cors,'Access-Control-Allow-Methods':'POST','Access-Control-Allow-Headers':'Content-Type'});res.end();return;
+   }
+   const size=Number(req.headers['content-length']);
+   if(req.method!=='POST'||req.headers['content-type']!=='application/json'||!Number.isInteger(size)||size<1||size>8192){res.writeHead(400,cors);res.end();return;}
+   const proxy=http.request({hostname:'127.0.0.1',port:apiPort,path:'/api/youtube',method:'POST',headers:{'content-type':'application/json','content-length':size}},upstream=>{
+    res.writeHead(upstream.statusCode,{...upstream.headers,...cors});upstream.pipe(res);
+   });
+   proxy.on('error',()=>{if(!res.headersSent)res.writeHead(503,{...cors,'Content-Type':'application/json'});res.end('{"error":"The local downloader is unavailable."}');});
+   res.on('close',()=>proxy.destroy());req.pipe(proxy);return;
+  }
   if(url.pathname.startsWith('/api/')){
    const proxy=http.request({hostname:'127.0.0.1',port:apiPort,path:req.url,method:req.method,headers:{...req.headers,host:req.headers.host}},upstream=>{res.writeHead(upstream.statusCode,upstream.headers);upstream.pipe(res);});
    proxy.on('error',()=>{if(!res.headersSent){res.writeHead(503,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'The local Python API is starting or unavailable. Install requirements.txt and try again.'}));}});

@@ -45,7 +45,14 @@ function asset(source){return '/api/save?'+new URLSearchParams({source,preview:'
 function filename(item,mime=''){const ext=mime.includes('jpeg')?'jpg':mime.includes('png')?'png':mime.includes('webp')?'webp':mime.includes('avif')?'avif':mime.includes('gif')?'gif':mime.includes('webm')?'webm':item.type==='image'?'jpg':'mp4';const title=Array.from(String(item.caption||'').replace(/[<>:"/\\|?*\u0000-\u001f\u007f]/g,' ').replace(/\s+/g,' ').trim()).slice(0,140).join('').replace(/[. ]+$/g,'');const safeTitle=title&&!/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i.test(title)?title:'ReelDrop-'+String(item.id||'media').replace(/[^A-Za-z0-9_-]/g,'').slice(0,60);return safeTitle+'.'+ext;}
 function choose(item,select){return item.variants?.[Number(select?.value||0)]||item;}
 function saveBlob(blob,name){const objectUrl=URL.createObjectURL(blob),a=document.createElement('a');a.href=objectUrl;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(objectUrl),60000);}
-async function getBlob(item,select,onProgress){const selected=choose(item,select),controller=new AbortController();controllers.add(controller);const timeout=setTimeout(()=>controller.abort(),65000);try{const endpoint=item.youtubeUrl?'/api/youtube':'/api/save';const request=item.youtubeUrl?{url:item.youtubeUrl,quality:selected.height}:{source:selected.url,filename:String(item.id||'media')};const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(request),signal:controller.signal});if(!response.ok){const error=await response.json().catch(()=>({}));throw Error(error.error||'Download failed. Please try again.');}const mime=response.headers.get('content-type')||'';if(!/^(image|video)\//.test(mime))throw Error('The server did not return a photo or video.');const expected=Number(response.headers.get('x-media-size')),reader=response.body.getReader(),chunks=[];let size=0;while(true){const {done,value}=await reader.read();if(done)break;chunks.push(value);size+=value.length;if(size>160*1024*1024){await reader.cancel();throw Error('This file is too large for an in-browser download. Try a lower available quality.');}onProgress?.(size,expected);}if(!size||expected>0&&size!==expected)throw Error('The transfer was interrupted. Please retry.');return {blob:new Blob(chunks,{type:mime}),name:filename(item,mime)};}finally{clearTimeout(timeout);controllers.delete(controller);}}
+const localYouTubeEndpoint='http://127.0.0.1:3040/reeldrop-local/youtube';
+function requestMedia(endpoint,body,signal){
+ const local=endpoint===localYouTubeEndpoint;
+ return fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify(body),signal,
+  ...(local?{credentials:'omit',targetAddressSpace:'loopback'}:{})});
+}
+async function getBlob(item,select,onProgress){const selected=choose(item,select),controller=new AbortController();controllers.add(controller);const timeout=setTimeout(()=>controller.abort(),65000);try{const endpoint=item.downloadLocally?localYouTubeEndpoint:item.youtubeUrl?'/api/youtube':'/api/save';const request=item.youtubeUrl?{url:item.youtubeUrl,quality:selected.height}:{source:selected.url,filename:String(item.id||'media')};const response=await requestMedia(endpoint,request,controller.signal);if(!response.ok){const error=await response.json().catch(()=>({}));throw Error(error.error||'Download failed. Please try again.');}const mime=response.headers.get('content-type')||'';if(!/^(image|video)\//.test(mime))throw Error('The server did not return a photo or video.');const expected=Number(response.headers.get('x-media-size')),reader=response.body.getReader(),chunks=[];let size=0;while(true){const {done,value}=await reader.read();if(done)break;chunks.push(value);size+=value.length;if(size>160*1024*1024){await reader.cancel();throw Error('This file is too large for an in-browser download. Try a lower available quality.');}onProgress?.(size,expected);}if(!size||expected>0&&size!==expected)throw Error('The transfer was interrupted. Please retry.');return {blob:new Blob(chunks,{type:mime}),name:filename(item,mime)};}finally{clearTimeout(timeout);controllers.delete(controller);}}
 async function downloadOne(item,select,button){const current=generation;button.disabled=true;progress.hidden=false;progress.removeAttribute('value');message(item.youtubeUrl?'Preparing MP4 with audio… Keep this page open.':'Downloading… Keep this page open.');try{const file=await getBlob(item,select,(size,total)=>{if(current!==generation)return;if(total){progress.max=total;progress.value=size;}message('Downloading… '+(size/1048576).toFixed(1)+' MB'+(total?' / '+(total/1048576).toFixed(1)+' MB':''));});if(current!==generation)return;saveBlob(file.blob,file.name);window.reelDropTrack?.(item.type==='image'?'photo_download':'video_download');message('Download started. Check your browser’s Downloads folder.');}catch(error){if(current===generation&&error.name!=='AbortError')window.reelDropTrack?.('download_failed');if(current===generation)message(error.name==='AbortError'?'Download cancelled or timed out. Please retry.':error.message,true);}finally{button.disabled=false;if(current===generation)progress.hidden=true;}}
 function reset(){generation++;for(const controller of controllers)controller.abort();controllers.clear();input.value='';results.replaceChildren();payload=null;cards=[];submit.disabled=false;progress.hidden=true;message('');input.focus();}
 document.querySelector('#clear').addEventListener('click',reset);
@@ -105,7 +112,49 @@ function render(data){
  heading.focus({preventScroll:true});
  return true;
 }
-form.addEventListener('submit',async event=>{event.preventDefault();window.reelDropTrack?.('search_started');const current=++generation;for(const c of controllers)c.abort();controllers.clear();results.replaceChildren();cards=[];submit.disabled=true;message(t()[10]);const controller=new AbortController();controllers.add(controller);const timeout=setTimeout(()=>controller.abort(),55000);try{const url=input.value.trim();const endpoint=mode==='youtube'||(mode==='all'&&isYouTubeLink(url))?'/api/youtube':'/api/direct';const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,mode}),signal:controller.signal});const data=await response.json().catch(()=>({error:'The service could not answer. Please retry.'}));if(current!==generation)return;if(!response.ok)throw Error(data.error||'This media could not be retrieved.');payload=data;const found=render(data);window.reelDropTrack?.(found?'search_results':'search_failed');}catch(error){if(current===generation&&error.name!=='AbortError')window.reelDropTrack?.('search_failed');if(current===generation)message(error.name==='AbortError'?'The request was cancelled or took too long. Try again.':error.message,true);}finally{clearTimeout(timeout);controllers.delete(controller);if(current===generation)submit.disabled=false;}});
+function offerLocalDownload(url){
+ message('YouTube is blocking the hosting server. You can use the local downloader on this computer.');
+ const button=document.createElement('button');
+ button.type='button';button.className='primary';button.textContent='Use local downloader';
+ button.onclick=()=>findMedia(url,true);
+ results.append(button);
+}
+
+async function findMedia(url,local=false){
+ window.reelDropTrack?.('search_started');
+ const current=++generation;
+ for(const controller of controllers)controller.abort();
+ controllers.clear();results.replaceChildren();cards=[];submit.disabled=true;
+ message(local?'Connecting to the downloader on this computer…':t()[10]);
+ const controller=new AbortController();controllers.add(controller);
+ const timeout=setTimeout(()=>controller.abort(),55000);
+ const youtube=mode==='youtube'||(mode==='all'&&isYouTubeLink(url));
+ const endpoint=local?localYouTubeEndpoint:youtube?'/api/youtube':'/api/direct';
+ try{
+  const response=await requestMedia(endpoint,{url,mode},controller.signal);
+  const data=await response.json().catch(()=>({error:'The service could not answer. Please retry.'}));
+  if(current!==generation)return;
+  if(!local&&youtube&&location.hostname==='reeldrop.jobcraft.in'&&data.code==='YOUTUBE_SIGNIN_REQUIRED'){
+   offerLocalDownload(url);return;
+  }
+  if(!response.ok)throw Error(data.error||'This media could not be retrieved.');
+  if(local){for(const item of data.media||[])item.downloadLocally=true;}
+  payload=data;const found=render(data);
+  window.reelDropTrack?.(found?'search_results':'search_failed');
+ }catch(error){
+  if(current!==generation)return;
+  if(error.name!=='AbortError')window.reelDropTrack?.('search_failed');
+  if(local&&error instanceof TypeError){
+   offerLocalDownload(url);
+   message('Could not connect. Start the ReelDrop helper and allow local network access in your browser, then retry.',true);
+  }else{message(error.name==='AbortError'?'The request was cancelled or took too long. Try again.':error.message,true);}
+ }finally{
+  clearTimeout(timeout);controllers.delete(controller);
+  if(current===generation)submit.disabled=false;
+ }
+}
+
+form.addEventListener('submit',event=>{event.preventDefault();void findMedia(input.value.trim());});
 let installPrompt=null;window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;document.querySelectorAll('[data-install]').forEach(b=>b.hidden=false);});document.querySelectorAll('[data-install]').forEach(button=>button.onclick=async()=>{if(installPrompt){await installPrompt.prompt();installPrompt=null;}else location.href='/install.html';});
 if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 const params=new URLSearchParams(location.search);let shared=params.get('url')||params.get('text');if(shared){const match=shared.match(/https?:\/\/(?:www\.)?instagram\.com\/[^\s]+/);input.value=match?match[0]:shared;}
