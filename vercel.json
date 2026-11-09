@@ -18,6 +18,12 @@
       "regions": [
         "bom1"
       ]
+    },
+    "api/guest-playback-probe.js": {
+      "regions": [
+        "bom1"
+      ],
+      "maxDuration": 30
     }
   },
   "headers": [
