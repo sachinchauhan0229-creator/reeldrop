@@ -9,3 +9,8 @@
 .activity-table td:first-child{white-space:nowrap}
 .activity-browser-link{border:0;padding:0;color:var(--green);font:inherit;text-decoration:underline;background:transparent}
 #activity summary{cursor:pointer;font-weight:650}
+
+.pagination{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:12px 0}
+.activity-controls .pagination{margin:0}
+.pagination button{min-width:38px;padding:7px 10px}
+.pagination button[aria-current="page"]{background:var(--green);border-color:var(--green);color:var(--bg);opacity:1;cursor:default}
