@@ -1,5 +1,5 @@
 (()=>{'use strict';const $=id=>document.getElementById(id),fmt=v=>Number(v||0).toLocaleString('en-IN');let busy=false;
-const endpoint='https://jobcraft.in/api/reeldrop-analytics';
+const endpoint='https://jobcraft.in/api/reeldrop-analytics/';
 function request(op,query={},options={}){
   return fetch(endpoint+'?'+new URLSearchParams({op,...query}),{
     cache:'no-store',credentials:'include',...options

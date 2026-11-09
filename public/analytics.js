@@ -1,5 +1,5 @@
 (()=>{
-  const endpoint='https://jobcraft.in/api/reeldrop-analytics?op=event';
+  const endpoint='https://jobcraft.in/api/reeldrop-analytics/?op=event';
   function track(action){
     try{
       if(location.hostname!=='reeldrop.jobcraft.in'||/^\/(admin|api)([/.]|$)/i.test(location.pathname)||
