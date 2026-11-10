@@ -1,4 +1,4 @@
-"""Stream validated Instagram photos/videos from the same site; never an arbitrary proxy."""
+"""Stream validated photos and videos from approved media hosts."""
 import json
 import re
 import threading
@@ -63,7 +63,7 @@ class handler(BaseHTTPRequestHandler):
                 headers['Range']=requested_range
             with build_opener(CDNRedirects()).open(Request(target,headers=headers),timeout=15) as upstream:
                 mime=upstream.headers.get('Content-Type','').split(';')[0].strip().lower()
-                if mime not in MEDIA_TYPES:raise MediaError('Instagram did not return a supported photo or video.','INVALID_CONTENT',502)
+                if mime not in MEDIA_TYPES:raise MediaError('The source did not return a supported photo or video.','INVALID_CONTENT',502)
                 filename=re.sub(r'[^A-Za-z0-9_-]','',str(data.get('filename','media')))[:80] or 'media'
                 disposition='inline' if str(data.get('preview','0'))=='1' else 'attachment'
                 status=getattr(upstream,'status',200)
@@ -81,7 +81,7 @@ class handler(BaseHTTPRequestHandler):
         except (ValueError,TypeError):
             if not started:self.error_json(400,'Invalid download request.','INVALID_REQUEST')
         except Exception:
-            if not started:self.error_json(502,'Instagram could not deliver this media. Please try again.')
+            if not started:self.error_json(502,'The source could not deliver this media. Please try again.')
             else:self.close_connection=True
         finally:
             if acquired:_proxy_slots.release()
