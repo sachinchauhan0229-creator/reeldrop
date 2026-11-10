@@ -33,3 +33,34 @@ MCP protocol: https://modelcontextprotocol.io/specification/2025-06-18
 
 ## SEO
 Canonical and sitemap URLs retain reeldrop.jobcraft.in. Search Console ownership/indexing status is external and is not inferred by this feature update. No ranking or AdSense approval is guaranteed.
+
+## Optional YouTube session database
+
+Create an Upstash Redis database. For a Vercel Preview test, set these private
+variables in ReelDrop:
+
+- `REELDROP_SESSION_REDIS_URL`: the database's HTTPS REST URL.
+- `REELDROP_SESSION_REDIS_READ_TOKEN`: the read-only REST token.
+- `REELDROP_SESSION_ENCRYPTION_KEY`: a Fernet key. Generate one privately with
+  `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`.
+
+Install `requirements.txt` locally. In a private local shell, set the same URL
+and encryption key, plus `REELDROP_SESSION_REDIS_WRITE_TOKEN` using the database's
+write-capable token. Sign in on YouTube and obtain a YouTube-only Netscape cookie
+file following the [yt-dlp instructions](https://github.com/yt-dlp/yt-dlp/wiki/Extractors#exporting-youtube-cookies).
+From the project directory, run:
+
+```sh
+python reeldrop_youtube_session.py /private/path/to/youtube-cookies.txt
+```
+
+Repeat the upload when the session expires. The new record takes effect on the
+next request and does not require a redeploy. Keep the cookie file, both REST
+tokens and encryption key private. The uploader stores one encrypted record.
+Vercel reads it into memory when its own YouTube downloader runs. A configured
+external worker uses its own session and takes precedence.
+
+Production uses a separate record. Set the three variables in the Production
+environment with a separate Fernet key, then run the uploader with
+`--production` and the Production key.
+
