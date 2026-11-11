@@ -106,7 +106,30 @@ $('activity-apply').onclick=()=>loadActivity();
 $('activity-clear').onclick=()=>{$('activity-browser').value='';$('activity-action').value='all';loadActivity();};
 $('activity-prev').onclick=()=>loadActivity(Math.max(0,activityPage-1));
 $('activity-next').onclick=()=>loadActivity(activityPage+1);
+const sidebar = $('admin-sidebar');
+const sidebarToggle = $('sidebar-toggle');
+sidebarToggle.onclick = () => {
+  const open = sidebarToggle.getAttribute('aria-expanded') !== 'true';
+  sidebarToggle.setAttribute('aria-expanded', String(open));
+  document.body.classList.toggle('sidebar-open', open);
+};
+sidebar.querySelectorAll('nav a').forEach(link => {
+  link.onclick = () => {
+    sidebar.querySelectorAll('nav a').forEach(item => item.removeAttribute('aria-current'));
+    link.setAttribute('aria-current', 'location');
+    sidebarToggle.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('sidebar-open');
+  };
+});
 function signedIn(value){
+  sidebar.hidden = !value;
+  sidebarToggle.hidden = !value;
+  document.body.classList.toggle('admin-signed-in', value);
+  if (!value) {
+    sidebarToggle.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('sidebar-open');
+  }
+
   const openingReconnect = value && $('report').hidden && location.hash === '#youtube-reconnect';
   if(!value){activityRequest?.abort();$('activity-rows').replaceChildren();}$('login').hidden=value;$('report').hidden=!value;$('logout').hidden=!value;
   if(openingReconnect) $('youtube-reconnect').scrollIntoView();
