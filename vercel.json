@@ -5,16 +5,20 @@
       "maxDuration": 60
     },
     "api/direct.py": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "excludeFiles": "{node_modules/**,public/**,test/**,.git/**}"
     },
     "api/save.py": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "excludeFiles": "{node_modules/**,public/**,test/**,.git/**}"
     },
     "api/mcp.py": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "excludeFiles": "{node_modules/**,public/**,test/**,.git/**}"
     },
     "api/youtube.py": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "excludeFiles": "{node_modules/**,public/**,test/**,.git/**}"
     }
   },
   "headers": [
