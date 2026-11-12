@@ -11,5 +11,6 @@ module.exports = function preparePostHog(output) {
   const sdk = path.dirname(require.resolve('posthog-js/package.json'));
   fs.mkdirSync(path.join(output, 'vendor'), {recursive: true});
   fs.copyFileSync(path.join(sdk, 'dist/module.no-external.js'), path.join(output, 'vendor/posthog.mjs'));
+  fs.copyFileSync(path.join(sdk, 'LICENSE'), path.join(output, 'vendor/posthog-LICENSE.txt'));
   fs.writeFileSync(path.join(output, 'posthog-config.json'), JSON.stringify({token, host}));
 };
