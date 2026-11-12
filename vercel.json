@@ -5,20 +5,16 @@
       "maxDuration": 60
     },
     "api/direct.py": {
-      "maxDuration": 60,
-      "excludeFiles": "{**/node_modules/**,public/**,test/**,.git/**,.venv/**,.vercel/**,.cache/**,**/__pycache__/**}"
+      "maxDuration": 60
     },
     "api/save.py": {
-      "maxDuration": 60,
-      "excludeFiles": "{**/node_modules/**,public/**,test/**,.git/**,.venv/**,.vercel/**,.cache/**,**/__pycache__/**}"
+      "maxDuration": 60
     },
     "api/mcp.py": {
-      "maxDuration": 60,
-      "excludeFiles": "{**/node_modules/**,public/**,test/**,.git/**,.venv/**,.vercel/**,.cache/**,**/__pycache__/**}"
+      "maxDuration": 60
     },
     "api/youtube.py": {
-      "maxDuration": 60,
-      "excludeFiles": "{**/node_modules/**,public/**,test/**,.git/**,.venv/**,.vercel/**,.cache/**,**/__pycache__/**}"
+      "maxDuration": 60
     }
   },
   "headers": [
@@ -76,6 +72,5 @@
       "destination": "https://reeldrop.jobcraft.in/:path*",
       "permanent": true
     }
-  ],
-  "buildCommand": "npm run build"
+  ]
 }

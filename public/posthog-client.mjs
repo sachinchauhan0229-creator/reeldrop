@@ -30,7 +30,7 @@ if (site && !excluded.test(location.pathname) && !optedOut()) {
   }
 
   try {
-    const response = await fetch('/posthog-config.json', {cache: 'no-store'});
+    const response = await fetch('/api/posthog-config', {cache: 'no-store'});
     if (!response.ok) throw Error('PostHog configuration unavailable');
     const config = await response.json();
     if (!/^phc_[A-Za-z0-9_-]+$/.test(config.token || '') ||
