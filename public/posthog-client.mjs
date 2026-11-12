@@ -60,7 +60,7 @@ if (site && !excluded.test(location.pathname) && !optedOut()) {
         const source = event.properties || {};
         const properties = {site, $current_url: location.origin + location.pathname,
           $host: location.hostname, $pathname: location.pathname, $process_person_profile: false};
-        for (const key of ['distinct_id', '$device_id', '$session_id', '$window_id',
+        for (const key of ['token', 'distinct_id', '$device_id', '$session_id', '$window_id',
           '$lib', '$lib_version', '$browser', '$browser_version', '$os', '$os_version',
           '$device_type', '$screen_width', '$screen_height', '$viewport_width', '$viewport_height']) {
           if (typeof source[key] === 'string' || typeof source[key] === 'number') properties[key] = source[key];
