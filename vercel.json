@@ -72,5 +72,6 @@
       "destination": "https://reeldrop.jobcraft.in/:path*",
       "permanent": true
     }
-  ]
+  ],
+  "buildCommand": "npm run build"
 }

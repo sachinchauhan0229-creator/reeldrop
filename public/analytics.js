@@ -21,3 +21,5 @@
   window.reelDropTrack=track;
   track('page_view');
 })();
+
+import('/posthog-client.mjs').catch(() => {});
