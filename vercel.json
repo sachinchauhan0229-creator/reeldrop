@@ -6,19 +6,19 @@
     },
     "api/direct.py": {
       "maxDuration": 60,
-      "excludeFiles": "{node_modules/**,public/**,test/**,.git/**}"
+      "excludeFiles": "{**/node_modules/**,public/**,test/**,.git/**,.venv/**,.vercel/**,.cache/**,**/__pycache__/**}"
     },
     "api/save.py": {
       "maxDuration": 60,
-      "excludeFiles": "{node_modules/**,public/**,test/**,.git/**}"
+      "excludeFiles": "{**/node_modules/**,public/**,test/**,.git/**,.venv/**,.vercel/**,.cache/**,**/__pycache__/**}"
     },
     "api/mcp.py": {
       "maxDuration": 60,
-      "excludeFiles": "{node_modules/**,public/**,test/**,.git/**}"
+      "excludeFiles": "{**/node_modules/**,public/**,test/**,.git/**,.venv/**,.vercel/**,.cache/**,**/__pycache__/**}"
     },
     "api/youtube.py": {
       "maxDuration": 60,
-      "excludeFiles": "{node_modules/**,public/**,test/**,.git/**}"
+      "excludeFiles": "{**/node_modules/**,public/**,test/**,.git/**,.venv/**,.vercel/**,.cache/**,**/__pycache__/**}"
     }
   },
   "headers": [
